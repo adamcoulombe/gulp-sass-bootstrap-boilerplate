@@ -16,11 +16,17 @@ const cleanCSS = require("gulp-clean-css");
 const imagemin = require("gulp-imagemin");
 const cache = require("gulp-cache");
 sass.compiler = require("node-sass");
+var iconfont = require('gulp-iconfont');
+var consolidate = require('gulp-consolidate');
+var runTimestamp = Math.round(Date.now() / 1000);
+var async = require('async');
 
 // style paths
 var sass_src = "./src/sass/main.scss",
   sass_files = "./src/sass/*.scss",
   img_src = "./src/assets/**/",
+  webfont_src = './src/assets/fonts/webfonts/**/',
+  font_src = './src/assets/fonts/icon-font/',
   html_src = "./src/**/*.html",
   js_src = "./src/**/*.js",
   dist = "./dist",
@@ -65,6 +71,41 @@ gulp.task(
     done();
   })
 );
+
+var fontName = 'demo-icons';
+
+gulp.task('iconfont', function (done) {
+  var iconStream = gulp.src([font_src+'src/*.svg'])
+    .pipe(iconfont({
+      fontName: 'icon', // required
+      prependUnicode: true, // recommended option
+      formats: ['ttf', 'eot', 'woff', 'woff2'], // default, 'woff2' and 'svg' are available
+      timestamp: runTimestamp, // recommended to get consistent builds when watching files
+    }))
+  async.parallel([
+    
+    (cb)=>{
+      iconStream.pipe(gulp.dest(assets + '/fonts/icon-font'))
+      .on('finish',cb)
+    },
+    (cb) => {
+    iconStream.on('glyphs', function (glyphs, options) {
+      gulp.src(font_src +'icon-font.css')
+        .pipe(consolidate('lodash', {
+          glyphs: glyphs,
+          fontName: 'icon',
+          fontPath: '../assets/fonts/icon-font/',
+          className: 's'
+        }))
+        .pipe(gulp.dest(css_temp))
+        .on('finish', cb)
+      console.log(glyphs, options);
+    })
+    }
+  ], done);
+    
+});
+
 
 // Compile sass into CSS
 gulp.task("build-sass", () => {
@@ -138,6 +179,13 @@ gulp.task("optimise-img", () => {
     .pipe(gulp.dest(assets));
 });
 
+// images optimising
+gulp.task("copy-webfonts", () => {
+  return gulp
+    .src(webfont_src + "*.+(eot|svg|ttf|woff|woff2|css)")
+    .pipe(gulp.dest(assets+'/fonts/webfonts'));
+});
+
 // html files build
 gulp.task(
   "build-html",
@@ -150,13 +198,13 @@ gulp.task(
 // build and minify
 gulp.task(
   "build-compress",
-  gulp.parallel("build-html", "build-sass", "compress-js", "optimise-img")
+  gulp.parallel("build-html", "iconfont", "copy-webfonts", "build-sass", "compress-js", "optimise-img")
 );
 
 // build files
 gulp.task(
   "build-all",
-  gulp.parallel("build-html", "build-sass", "bundle-js", "optimise-img")
+  gulp.parallel("build-html", "iconfont", "copy-webfonts", "build-sass", "bundle-js", "optimise-img")
 );
 
 // clean previous build

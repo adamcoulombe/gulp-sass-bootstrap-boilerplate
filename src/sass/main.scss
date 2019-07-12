@@ -1,7 +1,8 @@
-@import 'node_modules/bootstrap/scss/bootstrap';
-
-@import "fonts";
+@import 'node_modules/bootstrap/scss/functions';
 @import "variables";
+@import 'node_modules/bootstrap/scss/bootstrap';
+@import "fonts";
+
 
 html, body {
     margin: 0;
@@ -14,7 +15,7 @@ html {
 }
 
 body {
-    color: $color-white;
-    background: $color-black;
-    font-family: $font-family-montserrat;
+    color: $white;
+    background: $black;
+    font-family: $regular-font;
 }
